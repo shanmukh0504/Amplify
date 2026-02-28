@@ -236,6 +236,117 @@ Behavior:
 - Returns upstream status and body
 - Returns `502` on proxy failure
 
+## Bridge Endpoints
+
+All bridge endpoints are under `GET/POST /api/bridge/*` and currently support incoming swaps only (`BTC -> Starknet asset`).
+
+### `POST /api/bridge/orders`
+
+Create a bridge order and an Atomiq quote context.
+
+Request body:
+
+```json
+{
+  "network": "mainnet",
+  "sourceAsset": "BTC",
+  "destinationAsset": "USDC",
+  "amount": "100000",
+  "amountType": "exactIn",
+  "receiveAddress": "0x0123...starknet",
+  "walletAddress": "0xabc..."
+}
+```
+
+Validation:
+
+- `network`: `mainnet | testnet`
+- `sourceAsset`: must be `BTC`
+- `destinationAsset`: one of `USDC | ETH | STRK | WBTC | USDT | TBTC`
+- `amount`: positive integer string
+- `amountType`: `exactIn | exactOut`
+- `receiveAddress`: validated with `starknet.js` (`validateAndParseAddress`)
+
+Response:
+
+```json
+{
+  "data": {
+    "orderId": "uuid",
+    "status": "CREATED",
+    "quote": {
+      "amountIn": "100000",
+      "amountOut": "9990000",
+      "depositAddress": "bc1..."
+    },
+    "expiresAt": "2026-03-01T00:00:00.000Z"
+  }
+}
+```
+
+### `POST /api/bridge/orders/:id/prepare`
+
+Build user-side action payload for funding/signing.
+
+Response action variants:
+
+- `SIGN_PSBT`:
+  - `psbtBase64`
+  - `signInputs`
+- `ADDRESS`:
+  - `depositAddress`
+  - `amountSats`
+
+### `POST /api/bridge/orders/:id/submit`
+
+Submit signed funding payload.
+
+Request body:
+
+```json
+{
+  "signedPsbtBase64": "cHNidP8B...",
+  "sourceTxId": "optional-if-no-psbt"
+}
+```
+
+Notes:
+
+- At least one of `signedPsbtBase64` or `sourceTxId` is required.
+- Quote expiry is checked before submit.
+
+### `GET /api/bridge/orders/:id`
+
+Fetch full order state:
+
+- status lifecycle (`CREATED`, `AWAITING_USER_SIGNATURE`, `SOURCE_SUBMITTED`, `SOURCE_CONFIRMED`, `SETTLED`, `REFUNDED`, etc.)
+- `sourceTxId` and `destinationTxId`
+- normalized `quote`, `rawState`, and error fields
+
+### `GET /api/bridge/orders?walletAddress=...&page=1&limit=20`
+
+Wallet-based order history (paginated). Address lookup is normalized to lowercase.
+
+### `POST /api/bridge/orders/:id/retry`
+
+Manually trigger reconcile/recovery for an order.
+
+## Bridge Recovery
+
+The backend runs a periodic poller and attempts:
+
+- auto-claim when swap becomes claimable
+- auto-refund when swap becomes refundable
+- action/event logging in `bridge_actions` and `bridge_events`
+
+## Frontend Flow (PSBT path)
+
+1. Create order (`POST /orders`)
+2. Prepare action payload (`POST /orders/:id/prepare`)
+3. Sign `psbtBase64` in BTC wallet
+4. Submit signature (`POST /orders/:id/submit`)
+5. Poll status (`GET /orders/:id`) or use history (`GET /orders`)
+
 ## Wallet Endpoints (write / non-read-only)
 
 ### `POST /api/wallet/starknet`
