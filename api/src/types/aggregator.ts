@@ -34,3 +34,36 @@ export type UserHistoryEntry = {
   collateral: string;
   type: string;
 };
+
+export type LoanQuote = {
+  borrowUsd: number | null;
+  targetLtv: number | null;
+  requiredCollateralUsd: number | null;
+  requiredCollateralAmount: number | null;
+  liquidationPrice: number | null;
+};
+
+export type LoanOffer = {
+  offerId: string;
+  pool: {
+    id: string;
+    name: string;
+  };
+  collateral: {
+    symbol: string;
+    address: string;
+    decimals: number | null;
+  };
+  borrow: {
+    symbol: string;
+    address: string;
+    decimals: number | null;
+  };
+  chain: "starknet";
+  maxLtv: number;
+  liquidationFactor: number;
+  borrowApr: number;
+  collateralApr: number;
+  netApy: number;
+  quote: LoanQuote;
+};

@@ -8,6 +8,7 @@ import {
   parseOptionalBoolean,
   pickArray,
 } from "../lib/aggregatorUtils.js";
+import { buildLoanOffersFromPools, sortLoanOffers } from "../lib/offers.js";
 
 const router = Router();
 const PROTOCOL = "vesu";
@@ -19,6 +20,9 @@ type Pagination = {
   page: number;
   limit: number;
 };
+
+type OfferSortBy = "netApy" | "maxLtv" | "liquidationPrice";
+type OfferSortOrder = "asc" | "desc";
 
 function parsePagination(req: Request): Pagination {
   const pageRaw = asString(req.query.page).trim();
@@ -55,6 +59,14 @@ function paginate<T>(items: T[], pagination: Pagination): { data: T[]; meta: Rec
       hasPrevPage: pagination.page > 1,
     },
   };
+}
+
+function parsePositiveNumber(value: string, field: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${field} must be a positive number`);
+  }
+  return parsed;
 }
 
 router.get("/pools", async (req: Request, res: Response) => {
@@ -139,6 +151,69 @@ router.get("/users/:address/history", async (req: Request, res: Response) => {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Failed to fetch user history";
     if (msg.includes("page must") || msg.includes("limit must")) {
+      return res.status(400).json({ error: msg });
+    }
+    return res.status(502).json({ error: msg });
+  }
+});
+
+router.get("/offers/loan", async (req: Request, res: Response) => {
+  try {
+    const pagination = parsePagination(req);
+    const collateral = asString(req.query.collateral).trim();
+    const borrow = asString(req.query.borrow).trim();
+    if (!collateral || !borrow) {
+      return res.status(400).json({ error: "collateral and borrow query parameters are required" });
+    }
+
+    const borrowUsdRaw = asString(req.query.borrowUsd).trim();
+    const targetLtvRaw = asString(req.query.targetLtv).trim();
+    const sortByRaw = asString(req.query.sortBy).trim();
+    const sortOrderRaw = asString(req.query.sortOrder).trim();
+
+    const borrowUsd = borrowUsdRaw ? parsePositiveNumber(borrowUsdRaw, "borrowUsd") : undefined;
+    const targetLtv = targetLtvRaw ? parsePositiveNumber(targetLtvRaw, "targetLtv") : undefined;
+    if (targetLtv !== undefined && targetLtv > 1) {
+      return res.status(400).json({ error: "targetLtv must be between 0 and 1" });
+    }
+
+    const sortBy: OfferSortBy = sortByRaw
+      ? (sortByRaw as OfferSortBy)
+      : "netApy";
+    const sortOrder: OfferSortOrder = sortOrderRaw
+      ? (sortOrderRaw as OfferSortOrder)
+      : "desc";
+    if (!["netApy", "maxLtv", "liquidationPrice"].includes(sortBy)) {
+      return res.status(400).json({ error: "sortBy must be one of netApy, maxLtv, liquidationPrice" });
+    }
+    if (!["asc", "desc"].includes(sortOrder)) {
+      return res.status(400).json({ error: "sortOrder must be one of asc, desc" });
+    }
+
+    const raw = await getPools({ onlyVerified: true, onlyEnabledAssets: true });
+    const pools = pickArray(raw, ["data", "pools"]);
+    const offers = buildLoanOffersFromPools(pools, {
+      collateral,
+      borrow,
+      borrowUsd,
+      targetLtv,
+    });
+    const sorted = sortLoanOffers(offers, sortBy, sortOrder);
+    const tagged = sorted.map((offer) => ({ protocol: PROTOCOL, data: offer }));
+    const paged = paginate(tagged, pagination);
+
+    return res.json({
+      data: paged.data,
+      meta: paged.meta,
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Failed to fetch offers";
+    if (
+      msg.includes("page must") ||
+      msg.includes("limit must") ||
+      msg.includes("borrowUsd must") ||
+      msg.includes("targetLtv must")
+    ) {
       return res.status(400).json({ error: msg });
     }
     return res.status(502).json({ error: msg });
