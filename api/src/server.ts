@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import walletRoutes from "./routes/wallet.js";
 import paymasterRoutes from "./routes/paymaster.js";
+import vesuRoutes from "./routes/vesu.js";
+import aggregatorRoutes from "./routes/aggregator.js";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
@@ -22,6 +24,8 @@ app.get("/", (_req, res) => {
 
 app.use("/api/wallet", walletRoutes);
 app.use("/api/paymaster", paymasterRoutes);
+app.use("/api/vesu", vesuRoutes);
+app.use("/api", aggregatorRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
