@@ -97,10 +97,10 @@ export function usePrivyStarknet(): UsePrivyStarknetResult {
           paymaster: { nodeUrl: `${API_URL}/api/paymaster` },
         });
 
-        const { wallet: sdkWallet } = await sdk.onboard({
+        const onboardOptions = {
           strategy: OnboardStrategy.Privy,
-          deploy: "if_needed",
-          feeMode: "sponsored",
+          deploy: "if_needed" as const,
+          feeMode: "sponsored" as const,
           privy: {
             resolve: async () => ({
               walletId: wId!,
@@ -108,7 +108,29 @@ export function usePrivyStarknet(): UsePrivyStarknetResult {
               serverUrl: `${API_URL}/api/wallet/sign`,
             }),
           },
-        });
+        };
+
+        let sdkWallet: Awaited<ReturnType<typeof sdk.onboard>>["wallet"];
+        try {
+          const result = await sdk.onboard(onboardOptions);
+          sdkWallet = result.wallet;
+        } catch (err) {
+          // Contract may already be deployed (RPC lag / race with another session).
+          // Retry with deploy: "never" - the wallet will work since the contract exists.
+          const errStr =
+            (err instanceof Error ? err.message : String(err)) +
+            (typeof err === "object" && err !== null ? JSON.stringify(err) : "");
+          const isAlreadyDeployed = errStr.toLowerCase().includes("already deployed");
+          if (isAlreadyDeployed) {
+            const retry = await sdk.onboard({
+              ...onboardOptions,
+              deploy: "never",
+            });
+            sdkWallet = retry.wallet;
+          } else {
+            throw err;
+          }
+        }
 
         const addr = sdkWallet.address;
         setWallet(sdkWallet);

@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -13,8 +12,10 @@ import {
   StarknetInitializerType,
 } from "@atomiqlabs/chain-starknet";
 import { useWallet } from "@/store/useWallet";
+import { RPC_URL } from "@/lib/constants";
 
-const STARKNET_RPC = "https://starknet-sepolia.public.blastapi.io/rpc/v0_8";
+// Atomiq SDK uses "pending" block id - must use RPC v0.8 (v0.10 removed pending support)
+// const STARKNET_RPC = RPC_URL;
 const factory = new SwapperFactory<[StarknetInitializerType]>([
   StarknetInitializer,
 ]);
@@ -44,103 +45,103 @@ export function AtomiqSwap() {
   const [status, setStatus] = useState<string>("");
   const [swapId, setSwapId] = useState<string | null>(null);
 
-  const swapper = useMemo(() => {
-    return factory.newSwapper({
-      chains: { STARKNET: { rpcUrl: new RpcProviderWithRetries({ nodeUrl: STARKNET_RPC }) } },
-      bitcoinNetwork: BitcoinNetwork.TESTNET4,
-    });
-  }, []);
+  // const swapper = useMemo(() => {
+  //   return factory.newSwapper({
+  //     chains: { STARKNET: { rpcUrl: new RpcProviderWithRetries({ nodeUrl: STARKNET_RPC }) } },
+  //     bitcoinNetwork: BitcoinNetwork.TESTNET4,
+  //   });
+  // }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await swapper.init();
-        if (!cancelled) setInit(true);
-      } catch (e) {
-        if (!cancelled)
-          setStatus("Failed to init: " + (e instanceof Error ? e.message : String(e)));
-      }
-    })();
-    return () => {
-      cancelled = true;
-      void swapper.stop();
-    };
-  }, [swapper]);
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   (async () => {
+  //     try {
+  //       await swapper.init();
+  //       if (!cancelled) setInit(true);
+  //     } catch (e) {
+  //       if (!cancelled)
+  //         setStatus("Failed to init: " + (e instanceof Error ? e.message : String(e)));
+  //     }
+  //   })();
+  //   return () => {
+  //     cancelled = true;
+  //     void swapper.stop();
+  //   };
+  // }, [swapper]);
 
-  const runSwap = async () => {
-    if (
-      !connected ||
-      !bitcoinPaymentAddress ||
-      !starknetAddress ||
-      !bitcoinWalletInstance ||
-      !starknetSigner
-    ) {
-      setStatus("Connect both wallets first.");
-      return;
-    }
-    if (!amountBtc || Number(amountBtc) <= 0) {
-      setStatus("Enter amount.");
-      return;
-    }
+  // const runSwap = async () => {
+  //   if (
+  //     !connected ||
+  //     !bitcoinPaymentAddress ||
+  //     !starknetAddress ||
+  //     !bitcoinWalletInstance ||
+  //     !starknetSigner
+  //   ) {
+  //     setStatus("Connect both wallets first.");
+  //     return;
+  //   }
+  //   if (!amountBtc || Number(amountBtc) <= 0) {
+  //     setStatus("Enter amount.");
+  //     return;
+  //   }
 
-    setSwapping(true);
-    setStatus("Creating quote…");
+  //   setSwapping(true);
+  //   setStatus("Creating quote…");
 
-    try {
-      const amountSats = BigInt(Math.floor(Number(amountBtc) * 1e8));
-      const token = getStarknetToken(dstToken);
+  //   try {
+  //     const amountSats = BigInt(Math.floor(Number(amountBtc) * 1e8));
+  //     const token = getStarknetToken(dstToken);
 
-      const swap = await swapper.swap(
-        Tokens.BITCOIN.BTC,
-        token,
-        amountSats,
-        true,
-        bitcoinPaymentAddress,
-        starknetAddress,
-        {}
-      );
+  //     const swap = await swapper.swap(
+  //       Tokens.BITCOIN.BTC,
+  //       token,
+  //       amountSats,
+  //       true,
+  //       bitcoinPaymentAddress,
+  //       starknetAddress,
+  //       {}
+  //     );
 
-      const id = swap.getId();
-      setSwapId(id);
-      setStatus("Quote created. Sending BTC…");
+  //     const id = swap.getId();
+  //     setSwapId(id);
+  //     setStatus("Quote created. Sending BTC…");
 
-      swap.events.on("swapState", () => {
-        setStatus("Swap state updated.");
-      });
+  //     swap.events.on("swapState", () => {
+  //       setStatus("Swap state updated.");
+  //     });
 
-      const btcInstance = bitcoinWalletInstance as unknown as {
-        publicKey?: string;
-        pubkey?: string;
-        getAccounts?: () => unknown;
-        toBitcoinWalletAccounts?: () => unknown;
-      };
-      if (!btcInstance.publicKey && btcInstance.pubkey) {
-        btcInstance.publicKey = btcInstance.pubkey;
-      }
-      if (!btcInstance.getAccounts && btcInstance.toBitcoinWalletAccounts) {
-        btcInstance.getAccounts = () => btcInstance.toBitcoinWalletAccounts!();
-      }
+  //     const btcInstance = bitcoinWalletInstance as unknown as {
+  //       publicKey?: string;
+  //       pubkey?: string;
+  //       getAccounts?: () => unknown;
+  //       toBitcoinWalletAccounts?: () => unknown;
+  //     };
+  //     if (!btcInstance.publicKey && btcInstance.pubkey) {
+  //       btcInstance.publicKey = btcInstance.pubkey;
+  //     }
+  //     if (!btcInstance.getAccounts && btcInstance.toBitcoinWalletAccounts) {
+  //       btcInstance.getAccounts = () => btcInstance.toBitcoinWalletAccounts!();
+  //     }
 
-      await swap.sendBitcoinTransaction(bitcoinWalletInstance);
-      setStatus("BTC sent. Waiting for confirmation…");
+  //     await swap.sendBitcoinTransaction(bitcoinWalletInstance);
+  //     setStatus("BTC sent. Waiting for confirmation…");
 
-      await swap.waitForBitcoinTransaction(undefined, 1);
+  //     await swap.waitForBitcoinTransaction(undefined, 1);
 
-      setStatus("Claiming on Starknet…");
-      try {
-        await swap.waitTillClaimedOrFronted(AbortSignal.timeout(30_000));
-        setStatus("Done. Claimed by watchtower.");
-      } catch {
-        await swap.claim(starknetSigner);
-        setStatus("Done. Claimed manually.");
-      }
-    } catch (e) {
-      setStatus("Error: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setSwapping(false);
-    }
-  };
+  //     setStatus("Claiming on Starknet…");
+  //     try {
+  //       await swap.waitTillClaimedOrFronted(AbortSignal.timeout(30_000));
+  //       setStatus("Done. Claimed by watchtower.");
+  //     } catch {
+  //       await swap.claim(starknetSigner);
+  //       setStatus("Done. Claimed manually.");
+  //     }
+  //   } catch (e) {
+  //     setStatus("Error: " + (e instanceof Error ? e.message : String(e)));
+  //   } finally {
+  //     setSwapping(false);
+  //   }
+  // };
 
   const canSwap =
     init &&
@@ -202,7 +203,7 @@ export function AtomiqSwap() {
           </span>
           <button
             type="button"
-            onClick={runSwap}
+            // onClick={runSwap}
             disabled={!canSwap}
             className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
             style={{ backgroundColor: "var(--amplifi-primary)" }}
