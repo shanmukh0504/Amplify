@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
+import { settings } from "../lib/settings.js";
 
 const router = Router();
 
-const MEMPOOL_BASE = (
-  process.env.BITCOIN_NETWORK === "mainnet"
+const MEMPOOL_BASE =
+  settings.network === "mainnet"
     ? "https://mempool.space/api/"
-    : "https://mempool.space/testnet4/api/"
-);
+    : "https://mempool.space/testnet4/api/";
 
 async function proxyMempool(req: Request, res: Response) {
   try {

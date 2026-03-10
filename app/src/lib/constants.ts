@@ -6,20 +6,27 @@ export const NETWORK = (import.meta.env.VITE_NETWORK || "sepolia") as
   | "mainnet"
   | "sepolia";
 
-export const API_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:6969"
-).replace(/\/+$/, "");
+export const IS_MAINNET = NETWORK === "mainnet";
+
+export const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:6969").replace(
+  /\/+$/,
+  ""
+);
 
 export const RPC_URL = import.meta.env.VITE_RPC_URL;
+
+/** Bitcoin network string — "mainnet" or "testnet4". Driven by VITE_NETWORK. */
+export const BITCOIN_NETWORK_NAME: "mainnet" | "testnet4" = IS_MAINNET
+  ? "mainnet"
+  : "testnet4";
 
 /** Mempool API base — proxied through our backend to avoid CORS issues. */
 export const MEMPOOL_API_BASE = `${API_URL}/api/mempool`;
 
 /** BTC tx explorer (testnet4 or mainnet). */
-export const BTC_EXPLORER_BASE =
-  import.meta.env.VITE_BITCOIN_NETWORK === "mainnet"
-    ? "https://mempool.space"
-    : "https://mempool.space/testnet4";
+export const BTC_EXPLORER_BASE = IS_MAINNET
+  ? "https://mempool.space"
+  : "https://mempool.space/testnet4";
 
 /** Starknet tx explorer (Sepolia or mainnet). */
 export const STARKNET_EXPLORER_BASE =
