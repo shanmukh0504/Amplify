@@ -6,10 +6,9 @@ export const NETWORK = (import.meta.env.VITE_NETWORK || "sepolia") as
   | "mainnet"
   | "sepolia";
 
-export const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:6969").replace(
-  /\/+$/,
-  ""
-);
+export const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:6969"
+).replace(/\/+$/, "");
 
 export const RPC_URL = import.meta.env.VITE_RPC_URL;
 
@@ -26,7 +25,7 @@ export const BTC_EXPLORER_BASE =
 export const STARKNET_EXPLORER_BASE =
   NETWORK === "mainnet"
     ? "https://starkscan.co"
-    : "https://sepolia.starkscan.co";
+    : "https://sepolia.voyager.online";
 
 export const STORAGE_KEYS = {
   userId: "amplifi_privy_user_id",
@@ -62,7 +61,7 @@ export const ASSET_ICONS = {
 
 export const POOL_ICONS = {
   re7: "",
-  clearstar: "https://vesu.xyz/img/curator-logos/clearstar-light.png"
+  clearstar: "https://vesu.xyz/img/curator-logos/clearstar-light.png",
 } as const;
 
 /** Protocol icons for borrow offers (vesu, uncap, etc.). Keys are lowercase protocol id. */
@@ -84,4 +83,5 @@ export function getAssetIconUrl(symbol: string): string {
   return `${ASSET_ICON_DEFAULT}${s[0] ?? "?"}`;
 }
 
-export const POOL_ICON_PLACEHOLDER = "https://placehold.co/40x40/033122/ffffff?text=P";
+export const POOL_ICON_PLACEHOLDER =
+  "https://placehold.co/40x40/033122/ffffff?text=P";
