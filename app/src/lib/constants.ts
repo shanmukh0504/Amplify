@@ -25,8 +25,8 @@ export const BTC_EXPLORER_BASE =
 /** Starknet tx explorer (Sepolia or mainnet). */
 export const STARKNET_EXPLORER_BASE =
   NETWORK === "mainnet"
-    ? "https://starkscan.co"
-    : "https://sepolia.starkscan.co";
+    ? "https://voyager.online/"
+    : "https://sepolia.voyager.online";
 
 export const STORAGE_KEYS = {
   userId: "amplifi_privy_user_id",
@@ -85,3 +85,14 @@ export function getAssetIconUrl(symbol: string): string {
 }
 
 export const POOL_ICON_PLACEHOLDER = "https://placehold.co/40x40/033122/ffffff?text=P";
+
+/** Staking protocol icons for Earn page pools. */
+export const STAKING_PROTOCOL_ICONS: Record<string, string> = {
+  native_staking: ASSET_ICONS.STRK,
+  endur: "/logos/endur.avif",
+};
+
+export function getStakingProtocolIconUrl(protocol: string): string | null {
+  const key = protocol?.toLowerCase?.() ?? "";
+  return STAKING_PROTOCOL_ICONS[key] ?? null;
+}
