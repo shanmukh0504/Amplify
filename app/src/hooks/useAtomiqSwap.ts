@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { BitcoinNetwork } from "@atomiqlabs/sdk";
-import { RPC_URL } from "@/lib/constants";
+import { RPC_URL, IS_MAINNET } from "@/lib/constants";
 import {
   initSwapper,
   stopSwapper,
@@ -93,7 +93,7 @@ export function useAtomiqSwap(): UseAtomiqSwapResult {
     (async () => {
       setIsInitializing(true);
       try {
-        await initSwapper(BitcoinNetwork.TESTNET4, RPC_URL);
+        await initSwapper(IS_MAINNET ? BitcoinNetwork.MAINNET : BitcoinNetwork.TESTNET4, RPC_URL);
         if (!cancelled) {
           setIsInitialized(true);
           log("Swapper ready (BTC: Testnet4, Starknet: Sepolia)");

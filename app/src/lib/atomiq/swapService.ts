@@ -11,7 +11,7 @@ import {
   StarknetInitializerType,
   StarknetSigner,
 } from "@atomiqlabs/chain-starknet";
-import { API_URL } from "@/lib/constants";
+import { API_URL, IS_MAINNET } from "@/lib/constants";
 
 const factory = new SwapperFactory<[StarknetInitializerType]>([
   StarknetInitializer,
@@ -23,7 +23,10 @@ export type DstToken = "ETH" | "STRK" | "WBTC";
 
 export function getStarknetToken(dst: DstToken) {
   if (dst === "ETH") return Tokens.STARKNET.ETH;
-  if (dst === "WBTC") return Tokens.STARKNET._TESTNET_WBTC_VESU;
+  if (dst === "WBTC")
+    return IS_MAINNET
+      ? Tokens.STARKNET.WBTC
+      : Tokens.STARKNET._TESTNET_WBTC_VESU;
   return Tokens.STARKNET.STRK;
 }
 

@@ -16,12 +16,10 @@ export type StakingValidator = {
   stakerAddress: string;
 };
 
-const DEFAULT_NETWORK: SupportedNetwork = "sepolia";
+import { RPC_URL, NETWORK } from "@/lib/constants";
 
 export const STARKNET_NETWORK: SupportedNetwork =
-  (import.meta.env.VITE_STARKNET_NETWORK as SupportedNetwork) || DEFAULT_NETWORK;
-
-import { RPC_URL } from "@/lib/constants";
+  (import.meta.env.VITE_STARKNET_NETWORK as SupportedNetwork) || NETWORK;
 
 const sdkConfig: ConstructorParameters<typeof StarkZap>[0] = {
   network: STARKNET_NETWORK,
