@@ -148,29 +148,20 @@ export function EarnPage() {
         style={{ backgroundImage: "url('/mask.svg')" }}
         aria-hidden
       />
-      <div className="relative mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:gap-20">
-          <p className="text-2xl font-semibold tracking-tight md:text-3xl">
-            Earn
-          </p>
-          <p className="mt-0 sm:mt-2 text-sm sm:text-base leading-relaxed text-amplifi-text max-w-[899px]">
-            {pageTab === "earn"
-              ? "Compare staking options across protocols. Pools are sorted by lowest fee — best yields first."
-              : "View and manage your staking positions across all protocols."}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setPageTab(pageTab === "earn" ? "portfolio" : "earn")}
-          className="shrink-0 rounded-amplifi border border-amplifi-border bg-white px-5 py-2 text-sm font-medium text-amplifi-text transition-colors hover:bg-amplifi-surface"
-        >
-          {pageTab === "earn" ? "Portfolio" : "Back to Earn"}
-        </button>
+      <div className="relative mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:gap-20 lg:gap-20">
+        <p className="text-2xl font-semibold tracking-tight md:text-3xl">
+          Earn
+        </p>
+        <p className="mt-0 sm:mt-2 text-sm sm:text-base leading-relaxed text-amplifi-text max-w-[899px]">
+          {pageTab === "earn"
+            ? "Compare staking options across protocols. Pools are sorted by lowest fee — best yields first."
+            : "View and manage your staking positions across all protocols."}
+        </p>
       </div>
 
       {pageTab === "earn" ? (
         <>
-          <div className="relative mb-4">
+          <div className="relative mb-4 flex items-center justify-between gap-4">
             <div className="max-w-[220px]">
               <ScrollableSelect
                 value={sourceAsset}
@@ -182,15 +173,16 @@ export function EarnPage() {
                 placeholder="Select asset"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setPageTab("portfolio")}
+              className="shrink-0 rounded-amplifi border border-amplifi-border bg-white px-5 py-2 text-sm font-medium text-amplifi-text transition-colors hover:bg-amplifi-surface"
+            >
+              Portfolio
+            </button>
           </div>
 
-          <div
-            className={
-              selectedPool
-                ? "relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[1fr_472px]"
-                : "relative"
-            }
-          >
+          <div className="relative grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[1fr_472px]">
             {/* When selected: pools on left, form on right. When not: pools only (full width) */}
             <div className="w-full min-w-0">
               <EarnPoolsList
@@ -209,9 +201,9 @@ export function EarnPage() {
               />
             </div>
 
-            {selectedPool && (
-              <div className="w-full min-w-0">
-                {sourceAsset === "BTC" ? (
+            <div className="w-full min-w-0">
+              {selectedPool ? (
+                sourceAsset === "BTC" ? (
                   <BtcStakeForm
                     pool={selectedPool.item}
                     isBest={selectedPool.isBest}
@@ -229,9 +221,15 @@ export function EarnPage() {
                     isBest={selectedPool.isBest}
                     onBack={() => setSelectedPool(null)}
                   />
-                )}
-              </div>
-            )}
+                )
+              ) : (
+                <div className="rounded-amplifi bg-white p-6 lg:sticky lg:top-4">
+                  <p className="text-sm text-amplifi-muted text-center">
+                    Select a pool to start staking
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stake orders history table */}
@@ -244,10 +242,21 @@ export function EarnPage() {
           )}
         </>
       ) : (
-        <PortfolioSection
-          walletAddress={displayAddress}
-          allPools={allPools}
-        />
+        <>
+          <div className="relative mb-4 flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setPageTab("earn")}
+              className="shrink-0 rounded-amplifi border border-amplifi-border bg-white px-5 py-2 text-sm font-medium text-amplifi-text transition-colors hover:bg-amplifi-surface"
+            >
+              Back to Earn
+            </button>
+          </div>
+          <PortfolioSection
+            walletAddress={displayAddress}
+            allPools={allPools}
+          />
+        </>
       )}
     </div>
   );
@@ -480,10 +489,10 @@ function EarnPoolsList({
                 onKeyDown={(e) =>
                   e.key === "Enter" && onSelectPool({ item, isBest })
                 }
-                className={`flex flex-col gap-4 border-b border-amplifi-border py-6 last:border-b-0 cursor-pointer transition-colors ${
+                className={`flex flex-col gap-4 border-b border-amplifi-border py-6 last:border-b-0 cursor-pointer transition-all ${
                   isSelected
-                    ? "bg-amplifi-best-offer rounded-amplifi -mx-4 sm:-mx-5 md:-mx-6 px-4 sm:px-5 md:px-6"
-                    : ""
+                    ? "border-l-[3px] border-l-amplifi-primary pl-4"
+                    : "hover:bg-amplifi-surface-muted/50"
                 }`}
               >
                 {/* Top row: protocol, validator name, Best Offer tag, arrow */}

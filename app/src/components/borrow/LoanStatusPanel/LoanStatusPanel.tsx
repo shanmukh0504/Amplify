@@ -5,12 +5,12 @@ import { LOGOS } from "@/lib/constants";
 const POLL_INTERVAL_MS = 3000;
 
 const STEPS = [
-  { id: 1, label: "Order Created" },
-  { id: 2, label: "Sending BTC" },
-  { id: 3, label: "Confirming BTC" },
-  { id: 4, label: "Converting to WBTC" },
-  { id: 5, label: "Depositing Collateral" },
-  { id: 6, label: "Position Active" },
+  { id: 1, label: "Initiating Loan Request" },
+  { id: 2, label: "Broadcasting BTC Transaction" },
+  { id: 3, label: "Awaiting Network Confirmation" },
+  { id: 4, label: "Bridging to Wrapped BTC" },
+  { id: 5, label: "Allocating Collateral to Vault" },
+  { id: 6, label: "Loan Position Secured" },
 ] as const;
 
 /** Maps the frontend swap step to the loan progress step (1-based). */
