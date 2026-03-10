@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { SupplyBorrowForm } from "./SupplyBorrowForm";
 import { BorrowOffers, type LoanFlowState } from "./BorrowOffers";
 import { type LoanOfferItem } from "@/lib/amplifi-api";
-import { useWallet } from "@/store/useWallet";
 import { useAtomiqSwap } from "@/hooks/useAtomiqSwap";
 import { useVesuDeposit } from "@/hooks/useVesuDeposit";
 import type { DepositPhase } from "./LoanStatusPanel";
@@ -20,7 +19,6 @@ export function BorrowPage() {
   const [depositPhase, setDepositPhase] = useState<DepositPhase>("idle");
   const depositTriggeredRef = useRef(false);
 
-  const { starknetAddress } = useWallet();
   const { step, lastOrderId, runSwap } = useAtomiqSwap();
   const { deposit, error: depositError } = useVesuDeposit();
 
@@ -139,7 +137,6 @@ export function BorrowPage() {
             selectedOffer={selectedOffer}
             onInitiateLoan={handleInitiateLoan}
             initiateError={initiateError || (depositPhase === "error" ? (depositError ?? "Collateral deposit failed") : null)}
-            starknetAddress={starknetAddress}
             loanFlow={loanFlow}
           />
         </div>

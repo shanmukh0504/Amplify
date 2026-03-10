@@ -41,6 +41,8 @@ export interface UseAtomiqSwapResult {
     amountBtc: string;
     action?: "swap" | "borrow" | "stake";
     destinationAsset?: string;
+    /** Called immediately when order is created (before BTC send). Use to navigate to order status page. */
+    onOrderCreated?: (orderId: string) => void;
   }) => Promise<string | null>;
   clearLogs: () => void;
 }
@@ -105,6 +107,7 @@ export function useAtomiqSwap(): UseAtomiqSwapResult {
       amountBtc: string;
       action?: "swap" | "borrow" | "stake";
       destinationAsset?: string;
+      onOrderCreated?: (orderId: string) => void;
     }): Promise<string | null> => {
       if (!connected || !bitcoinPaymentAddress || !starknetAddress || !bitcoinWalletInstance || !starknetSigner) {
         const msg = "Connect both Bitcoin and Starknet wallets first.";
@@ -141,6 +144,7 @@ export function useAtomiqSwap(): UseAtomiqSwapResult {
         orderId = orderResp.data.orderId;
         setLastOrderId(orderId);
         log("Order created: " + orderId);
+        params.onOrderCreated?.(orderId);
 
         // Step 2: Create atomiq swap on frontend
         setStep("creating_swap");

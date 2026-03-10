@@ -256,6 +256,7 @@ export interface BridgeOrder {
   depositAddress: string | null;
   receiveAddress: string;
   walletAddress: string;
+  bitcoinAddress?: string | null;
   status: BridgeOrderStatus;
   action: "swap" | "borrow" | "stake";
   atomiqSwapId: string | null;

@@ -13,6 +13,7 @@ import {
   Tx,
   getStakingPreset,
 } from "starkzap";
+import type { TypedData, Signature } from "starknet";
 
 type AccountLike = {
   address: string;
@@ -189,8 +190,8 @@ export class InjectedStarkzapWallet extends BaseWallet {
     }
   }
 
-  async signMessage(typedData: unknown): Promise<unknown> {
-    return this.account.signMessage(typedData);
+  async signMessage(typedData: TypedData): Promise<Signature> {
+    return this.account.signMessage(typedData) as Promise<Signature>;
   }
 
   async preflight(options: PreflightOptions): Promise<PreflightResult> {

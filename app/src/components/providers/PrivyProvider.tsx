@@ -16,7 +16,7 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
 
   const loginMethods = (import.meta.env.VITE_PRIVY_LOGIN_METHODS || "email")
     .split(",")
-    .map((s) => s.trim())
+    .map((s: string) => s.trim())
     .filter(Boolean);
 
   return (
@@ -29,7 +29,9 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
           accentColor: "#171717",
         },
         embeddedWallets: {
-          createOnLogin: "users-without-wallets",
+          ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
         },
       }}
     >

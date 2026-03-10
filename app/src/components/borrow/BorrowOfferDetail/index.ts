@@ -1,0 +1,1 @@
+export { BorrowOfferDetail } from "./BorrowOfferDetail";

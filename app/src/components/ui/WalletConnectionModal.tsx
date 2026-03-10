@@ -31,7 +31,6 @@ export default function WalletConnectionModal({
   const {
     login: privyLogin,
     logout: privyLogout,
-    isReady: privyReady,
     isLoading: privyLoading,
     error: privyError,
   } = usePrivyStarknet();
