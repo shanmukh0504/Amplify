@@ -10,6 +10,7 @@ import { ENDUR_XSTRK_ADDRESS } from "@/lib/staking/endurClient";
 import { isBtcLikeSymbol } from "@/lib/staking/tokenUtils";
 import { useWallet } from "@/store/useWallet";
 import { LOGOS, getAssetIconUrl } from "@/lib/constants";
+import { EarnPoolsPanelSkeleton } from "@/components/skeletons";
 import type { DstToken } from "@/lib/atomiq/swapService";
 import {
   getEarnPools,
@@ -422,7 +423,7 @@ function EarnPoolsList({
         <p className="mb-4 text-sm text-amplifi-risk-hard">{error}</p>
       )}
       {loading ? (
-        <p className="text-sm text-amplifi-muted">Loading pools…</p>
+        <EarnPoolsPanelSkeleton />
       ) : pools.length === 0 ? (
         <p className="text-sm text-amplifi-muted">No pools found.</p>
       ) : (

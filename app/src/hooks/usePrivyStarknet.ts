@@ -5,6 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { StarkSDK, OnboardStrategy } from "starkzap";
 import type { WalletInterface } from "starkzap";
 import { StarknetSigner } from "@atomiqlabs/chain-starknet";
+import type { Account } from "starknet";
 import { API_URL, NETWORK, STORAGE_KEYS } from "@/lib/constants";
 
 export interface UsePrivyStarknetResult {
@@ -140,7 +141,7 @@ export function usePrivyStarknet(): UsePrivyStarknetResult {
         if (typeof sdkWallet.getAccount === "function") {
           try {
             const account = sdkWallet.getAccount();
-            const signer = new StarknetSigner(account);
+            const signer = new StarknetSigner(account as unknown as Account);
             setStarknetSigner(signer);
           } catch (e) {
             console.warn("[PrivyStarknet] Could not create StarknetSigner:", e);

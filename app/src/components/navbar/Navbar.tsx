@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { LOGOS } from "@/lib/constants";
 import { useWallet } from "@/store/useWallet";
 
-export type TabId = "borrow" | "earn" | "swap";
+export type TabId = "borrow" | "earn" | "swap" | "history";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "borrow", label: "Borrow" },
   { id: "earn", label: "Earn" },
   { id: "swap", label: "Swap" },
+  { id: "history", label: "History" },
 ];
 
 function short(addr?: string | null, leading = 6, trailing = 4) {

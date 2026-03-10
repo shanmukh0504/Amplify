@@ -18,7 +18,7 @@ export function useStarkzapWallet() {
       return privyStarkzapWallet as unknown as WalletInterface;
     }
     if (extensionAccount) {
-      return InjectedStarkzapWallet.fromAccount(extensionAccount as never);
+      return InjectedStarkzapWallet.fromAccount(extensionAccount as never) as unknown as WalletInterface;
     }
     throw new Error("Connect your Starknet wallet to continue");
   }, [starknetSource, privyStarkzapWallet, extensionAccount]);

@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo } from "react";
 import { SupplyBorrowForm } from "./SupplyBorrowForm";
 import { BorrowOffers, type LoanFlowState } from "./BorrowOffers";
 import { type LoanOfferItem } from "@/lib/amplifi-api";
-import { useWallet } from "@/store/useWallet";
 import { useAtomiqSwap } from "@/hooks/useAtomiqSwap";
 
 export function BorrowPage() {
@@ -15,9 +14,6 @@ export function BorrowPage() {
     isBest: boolean;
   } | null>(null);
   const [initiateError, setInitiateError] = useState<string | null>(null);
-  const {
-    starknetAddress,
-  } = useWallet();
 
   const {
     step,
@@ -103,7 +99,6 @@ export function BorrowPage() {
             selectedOffer={selectedOffer}
             onInitiateLoan={handleInitiateLoan}
             initiateError={initiateError}
-            starknetAddress={starknetAddress}
             loanFlow={loanFlow}
           />
         </div>

@@ -19,6 +19,18 @@ export const MEMPOOL_API_BASE =
     ? "https://mempool.space/api"
     : "https://mempool.space/testnet4/api";
 
+/** BTC tx explorer (testnet4 or mainnet). */
+export const BTC_EXPLORER_BASE =
+  import.meta.env.VITE_BITCOIN_NETWORK === "mainnet"
+    ? "https://mempool.space"
+    : "https://mempool.space/testnet4";
+
+/** Starknet tx explorer (Sepolia or mainnet). */
+export const STARKNET_EXPLORER_BASE =
+  NETWORK === "mainnet"
+    ? "https://starkscan.co"
+    : "https://sepolia.starkscan.co";
+
 export const STORAGE_KEYS = {
   userId: "amplifi_privy_user_id",
   walletId: "amplifi_wallet_id",

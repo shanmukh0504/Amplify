@@ -4,6 +4,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { getLoanOffers } from "@/lib/amplifi-api";
 import { ASSET_ICONS, LOGOS } from "@/lib/constants";
 import { useBtcBalance } from "@/hooks/useBtcBalance";
+import { useWalletReadyState } from "@/hooks/useWalletReadyState";
 import type { LoanOfferItem } from "@/lib/amplifi-api";
 
 export interface SupplyBorrowFormProps {
@@ -11,6 +12,8 @@ export interface SupplyBorrowFormProps {
   onLoanParamsChange?: (borrowUsd: number, targetLtv: number) => void;
   /** When an offer is selected, the form shows "Initiate Loan" state with updated icons. */
   selectedOffer?: { item: LoanOfferItem; isBest: boolean } | null;
+  /** Called when user clicks "Get the Loan" (no offer selected) - navigates to best offer. */
+  onGetTheLoan?: () => void;
   /** Called when user clicks "Initiate Loan" with form values. */
   onInitiateLoan?: (params: {
     btcEquivalent: number;
@@ -19,29 +22,53 @@ export interface SupplyBorrowFormProps {
   }) => void | Promise<void>;
   /** Error message from initiate loan attempt. */
   initiateError?: string | null;
-  /** Starknet address for receiveAddress in bridge order. */
-  starknetAddress?: string | null;
   /** When set, loan is in progress - show LTV slider (per design). */
   loanFlow?: { orderId: string } | null;
+  /** When wallet not connected on offer page, show "Connect Wallet" button. */
+  onConnectWallet?: () => void;
+  /** Initial supply amount (USD) when navigating to offer page. */
+  initialSupplyAmount?: string;
+  /** Initial LTV percentage (0-80) when navigating to offer page. */
+  initialLtvPct?: number;
+  /** Pre-loaded quote from home page (avoids refetch when navigating from home). */
+  initialQuote?: {
+    requiredCollateralAmount: number;
+    borrowUsd: number;
+    btcPriceUsd: number;
+  } | null;
 }
 
 export function SupplyBorrowForm({
   onLoanParamsChange,
   selectedOffer,
+  onGetTheLoan,
   onInitiateLoan,
   initiateError,
-  starknetAddress,
   loanFlow,
+  onConnectWallet,
+  initialSupplyAmount,
+  initialLtvPct,
+  initialQuote,
 }: SupplyBorrowFormProps) {
-  const [supplyAmount, setSupplyAmount] = useState("20");
-  const [ltvPct, setLtvPct] = useState(50);
+  const [supplyAmount, setSupplyAmount] = useState(initialSupplyAmount ?? "20");
+  const [ltvPct, setLtvPct] = useState(initialLtvPct ?? 50);
+
+  useEffect(() => {
+    if (initialSupplyAmount != null) setSupplyAmount(initialSupplyAmount);
+  }, [initialSupplyAmount]);
+  useEffect(() => {
+    if (initialLtvPct != null) setLtvPct(initialLtvPct);
+  }, [initialLtvPct]);
+
   const [quoteFromApi, setQuoteFromApi] = useState<{
     requiredCollateralAmount: number;
     borrowUsd: number;
     btcPriceUsd: number;
-  } | null>(null);
+  } | null>(initialQuote ?? null);
+  const [isQuoteLoading, setIsQuoteLoading] = useState(!initialQuote);
   const [fallbackBtcPriceUsd, setFallbackBtcPriceUsd] = useState<number | null>(null);
   const { balanceFormatted: btcBalanceDisplay, balanceBtc, isLoading: btcBalanceLoading } = useBtcBalance();
+  const { isWalletReadyForSwap, isWalletRestoring } = useWalletReadyState();
 
   const ltv = ltvPct / 100;
   const supplyAmountNum = parseFloat(supplyAmount.replace(/,/g, "")) || 0;
@@ -63,10 +90,17 @@ export function SupplyBorrowForm({
     const { supplyAmountNum: s, ltv: l } = debouncedParams;
     if (s <= 0 || l <= 0) {
       setQuoteFromApi(null);
+      setIsQuoteLoading(false);
+      return;
+    }
+    if (initialQuote && Math.abs(s * l - initialQuote.borrowUsd) < 1) {
+      setQuoteFromApi(initialQuote);
+      setIsQuoteLoading(false);
       return;
     }
     const borrowUsd = s * l;
     let cancelled = false;
+    setIsQuoteLoading(true);
     getLoanOffers({
       collateral: "WBTC",
       borrow: "USDC",
@@ -78,27 +112,42 @@ export function SupplyBorrowForm({
     })
       .then((res) => {
         if (cancelled || !res.data[0]?.data?.quote) {
-          if (!cancelled) setQuoteFromApi(null);
+          if (!cancelled) {
+            setQuoteFromApi(null);
+            setIsQuoteLoading(false);
+          }
           return;
         }
         const q = res.data[0].data.quote;
         const amount = q.requiredCollateralAmount;
         if (amount == null || amount <= 0) {
-          if (!cancelled) setQuoteFromApi(null);
+          if (!cancelled) {
+            setQuoteFromApi(null);
+            setIsQuoteLoading(false);
+          }
           return;
         }
         const btcPriceUsd = q.requiredCollateralUsd / amount;
-        setQuoteFromApi({
-          requiredCollateralAmount: amount,
-          borrowUsd: q.borrowUsd,
-          btcPriceUsd,
-        });
+        if (!cancelled) {
+          setQuoteFromApi({
+            requiredCollateralAmount: amount,
+            borrowUsd: q.borrowUsd,
+            btcPriceUsd,
+          });
+          setIsQuoteLoading(false);
+        }
       })
-      .catch(() => setQuoteFromApi(null));
+      .catch(() => {
+        if (!cancelled) {
+          setQuoteFromApi(null);
+          setIsQuoteLoading(false);
+        }
+      });
     return () => {
       cancelled = true;
+      setIsQuoteLoading(false);
     };
-  }, [debouncedParams]);
+  }, [debouncedParams, initialQuote]);
 
   useEffect(() => {
     const { supplyAmountNum: s, ltv: l } = debouncedParams;
@@ -186,10 +235,14 @@ export function SupplyBorrowForm({
             </div>
           </div>
           <div className="flex w-full items-center justify-between tracking-[-0.32px]">
-            <div className="text-base text-amplifi-text text-amplifi-muted">
-              {btcEquivalent != null && btcEquivalent > 0
-                ? `≈ ${btcEquivalent.toFixed(8)} BTC`
-                : "—"}
+            <div className="text-base text-amplifi-text text-amplifi-muted min-w-[140px]">
+              {isQuoteLoading ? (
+                <span className="inline-block h-4 w-24 skeleton-shimmer rounded align-middle" aria-label="Loading BTC equivalent" />
+              ) : btcEquivalent != null && btcEquivalent > 0 ? (
+                `≈ ${btcEquivalent.toFixed(8)} BTC`
+              ) : (
+                "—"
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-base text-amplifi-text text-amplifi-muted">
@@ -300,10 +353,14 @@ export function SupplyBorrowForm({
           <span className="text-base text-amplifi-text">Borrow</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <div className="text-4xl font-medium text-amplifi-amount">
-            {borrowAmountNum > 0
-              ? `$${borrowAmountNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-              : <span className="text-amplifi-muted/80">$0</span>}
+          <div className="text-4xl font-medium text-amplifi-amount min-h-[2.25rem] flex items-center">
+            {isQuoteLoading ? (
+              <span className="inline-block h-9 w-20 skeleton-shimmer rounded align-middle" aria-label="Loading borrow amount" />
+            ) : borrowAmountNum > 0 ? (
+              `$${borrowAmountNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+            ) : (
+              <span className="text-amplifi-muted/80">$0</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <img src={ASSET_ICONS.WBTC} alt="" className="h-8 w-8 rounded-full object-cover" />
@@ -322,10 +379,32 @@ export function SupplyBorrowForm({
         variant="primary"
         size="lg"
         className="w-full"
-        disabled={isInitiating || (isOfferSelected && (!starknetAddress || btcEquivalent == null || btcEquivalent <= 0))}
-        onClick={isOfferSelected ? handleInitiateClick : undefined}
+        disabled={
+          isInitiating ||
+          isQuoteLoading ||
+          (isOfferSelected &&
+            isWalletReadyForSwap &&
+            (btcEquivalent == null || btcEquivalent <= 0))
+        }
+        onClick={
+          isOfferSelected
+            ? isWalletReadyForSwap
+              ? handleInitiateClick
+              : onConnectWallet
+            : onGetTheLoan
+        }
       >
-        {isInitiating ? "Initiating…" : isOfferSelected ? "Initiate Loan" : "Get the Loan"}
+        {isInitiating
+          ? "Initiating…"
+          : isWalletRestoring && isOfferSelected
+            ? "Reconnecting wallets…"
+            : isQuoteLoading
+              ? "Getting quote…"
+              : isOfferSelected && !isWalletReadyForSwap && onConnectWallet
+                ? "Connect Wallet"
+                : isOfferSelected
+                  ? "Initiate Loan"
+                  : "Get the Loan"}
       </Button>
     </div>
   );
