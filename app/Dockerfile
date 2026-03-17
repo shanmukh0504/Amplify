@@ -5,9 +5,12 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
+# Install native build tools needed by transitive deps (e.g. utf-8-validate)
+RUN apk add --no-cache python3 make g++
+
 # Install dependencies (use frozen lockfile for reproducible builds)
 COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Copy source and config
 COPY . .
